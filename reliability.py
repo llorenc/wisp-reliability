@@ -185,3 +185,104 @@ ax = reliab.plot(x='n', logy=True,
                  title=r'99% reliability in 1 week')
 
 save_figure("antennas-reability-1-week.pdf")
+
+#
+# k=3
+#
+from fractions import Fraction
+
+n=10
+f=2
+r=3
+Q = np.array([[-n*f, n*f, 0],
+              [r, -(n-1)*f-r, (n-1)*f],
+              [0, r, -(n-2)*f-r]])
+
+ee = np.linalg.eig(Q)[0]
+ee
+
+for i in range(3):
+    print(Fraction(ee[i]).limit_denominator(10000))
+
+Fraction(n*(n-1)*(n-2)*f**3+n*f*r**2).limit_denominator(100000)
+
+(l1, l2, l3) = ee
+A = np.array([[1, 1, 1],
+              [1, l2/l1, l3/l1],
+              [1,(l2/l1)**2,(l3/l1)**2]])
+
+np.linalg.solve(A, np.array([-1,0,0]))
+
+l2*l3/((l1-l2)*(l3-l1))
+l1*l3/((l1-l2)*(l2-l3))
+l1*l2/((l1-l3)*(l3-l2))
+
+# n devices
+def R3nexact(mttf, mttr, n, t):
+    f=1/mttf
+    r=1/mttr
+    Q = np.array([[-n*f, n*f, 0],
+              [r, -(n-1)*f-r, (n-1)*f],
+              [0, r, -(n-2)*f-r]])
+    (l1, l2, l3) = np.linalg.eig(Q)[0]
+    return ((l2*l3/((l1-l2)*(l1-l3)))*np.exp(l1*t)+
+            (l1*l3/((l1-l2)*(l3-l2)))*np.exp(l2*t)+
+            (l1*l2/((l1-l3)*(l2-l3)))*np.exp(l3*t))
+
+def funcR3nexact(x, mttr, p, n, t):
+    return p-R3nexact(x, mttr, n, t)
+
+
+min=1e-5
+max=1000
+ndev = [n for n in range(2, 100+1)]
+
+# 99% reliability in 1 year
+Rperiod=1
+reliab =  pd.DataFrame(
+    {'n': ndev, 
+     r'$k=2$, mttr=1 week': [
+         scipy.optimize.brentq(funcR2nexact, min, max, args=(7/365, 0.99, n, Rperiod)) for n in ndev],
+     r'$k=3$, mttr=1 week': [
+         scipy.optimize.brentq(funcR3nexact, min, max, args=(7/365, 0.99, n, Rperiod)) for n in ndev],
+     # r'$k=2$, mttr=1 day': [
+     #     scipy.optimize.brentq(funcR2nexact, min, max, args=(1/365, 0.99, n, Rperiod)) for n in ndev],
+     # r'$k=3$, mttr=1 day': [
+     #     scipy.optimize.brentq(funcR3nexact, min, max, args=(1/365, 0.99, n, Rperiod)) for n in ndev],
+     r'$k=2$, mttr=2 h': [
+         scipy.optimize.brentq(funcR2nexact, min, max, args=(2*1/24*1/365, 0.99, n, Rperiod)) for n in ndev],
+     r'$k=3$, mttr=2 h': [
+         scipy.optimize.brentq(funcR3nexact, min, max, args=(2*1/24*1/365, 0.99, n, Rperiod)) for n in ndev]})
+
+ax = reliab.plot(x='n', logy=True, 
+                 ylabel='mean time to failure, mttf [years] (log)', 
+                 xlabel=r'number of antennas, $n_a$',
+                 title=r'99% reliability in 1 year')
+
+save_figure("antennas-reability-1-year-k-3.pdf")
+
+
+Rperiod=7/365
+reliab =  pd.DataFrame(
+    {'n': ndev, 
+     r'$k=2$, mttr=1 week': [
+         scipy.optimize.brentq(funcR2nexact, min, max, args=(7/365, 0.99, n, Rperiod)) for n in ndev],
+     r'$k=3$, mttr=1 week': [
+         scipy.optimize.brentq(funcR3nexact, min, max, args=(7/365, 0.99, n, Rperiod)) for n in ndev],
+     # r'$k=2$, mttr=1 day': [
+     #     scipy.optimize.brentq(funcR2nexact, min, max, args=(1/365, 0.99, n, Rperiod)) for n in ndev],
+     # r'$k=3$, mttr=1 day': [
+     #     scipy.optimize.brentq(funcR3nexact, min, max, args=(1/365, 0.99, n, Rperiod)) for n in ndev],
+     r'$k=2$, mttr=2 h': [
+         scipy.optimize.brentq(funcR2nexact, min, max, args=(2*1/24*1/365, 0.99, n, Rperiod)) for n in ndev],
+     r'$k=3$, mttr=2 h': [
+         scipy.optimize.brentq(funcR3nexact, min, max, args=(2*1/24*1/365, 0.99, n, Rperiod)) for n in ndev]})
+
+ax = reliab.plot(x='n', logy=True, 
+                 ylabel='mean time to failure, mttf [years] (log)', 
+                 xlabel=r'number of antennas, $n_a$',
+                 title=r'99% reliability in 1 week')
+
+
+save_figure("antennas-reability-1-week-k-3.pdf")
+
