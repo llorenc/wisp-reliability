@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# (c) Llorenç Cerdà-Alabern, Februari 2023.
+# (c) Llorenç Cerdà-Alabern, February 2023.
 # WISP reliability analysis
 
 import sys
