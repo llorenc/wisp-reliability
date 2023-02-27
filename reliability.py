@@ -211,6 +211,7 @@ A = np.array([[1, 1, 1],
               [1, l2/l1, l3/l1],
               [1,(l2/l1)**2,(l3/l1)**2]])
 
+# check coefficients of R3:
 np.linalg.solve(A, np.array([-1,0,0]))
 
 l2*l3/((l1-l2)*(l3-l1))
@@ -232,10 +233,9 @@ def R3nexact(mttf, mttr, n, t):
 def funcR3nexact(x, mttr, p, n, t):
     return p-R3nexact(x, mttr, n, t)
 
-
-min=1e-5
-max=1000
-ndev = [n for n in range(2, 100+1)]
+min=1e-6
+max=10000
+ndev = [n for n in range(3, 100+1)]
 
 # 99% reliability in 1 year
 Rperiod=1
