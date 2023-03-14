@@ -20,7 +20,7 @@ plt.ion()  # interactive non-blocking mode
 # wd
 pwd = os.getcwd()
 print('pwd: ' + pwd)
-wd = os.environ['HOME'] + '/doctorands/gabriele-gemmi/paper-cn2023'
+wd = os.environ['HOME'] + '/doctorands/gabriele-gemmi/reliability'
 if os.path.exists(wd):
     print('chdir: ' + wd)
     os.chdir(wd)
@@ -62,6 +62,35 @@ for i in range(3):
     ax.annotate(r'$\alpha_{}$'.format(i+1), xy=(ro[i],2e-4), ha="center")
 
 save_figure("gateway-failure-probability.pdf")
+
+#
+# alpha vs k
+#
+min=0
+max=1
+def opt_func(x, k, prob):
+    return pik(x,k)-prob
+
+a_df = pd.DataFrame({'prob':np.logspace(-6, -2, 20)})
+for k in range(1,10+1):
+    res = []
+    for prob in a_df['prob']:
+        alpha = scipy.optimize.brentq(opt_func, min, max, args=(k, prob))
+        res.append(alpha)
+        # df.iloc[len(df.index),:] = pd.DataFrame.from_dict({'k':k, 'prob':prob, 'aplpha': alpha})
+    a_df = pd.concat([a_df, pd.DataFrame({k: res})], axis=1)   
+
+a_df.shape
+
+adfm = pd.melt(a_df, id_vars='prob', var_name='k')
+
+plt.rcParams.update({'font.size': 14})
+g = sns.lineplot(adfm, x='prob', y='value', hue='k')
+g.set(xscale='log')
+g.set_xlabel('failure probability')
+g.set_ylabel('$\\alpha=mttr_r/mttf_r$')
+plt.savefig('figures/alpha-vs-failure-prob.pdf', format='pdf',
+            bbox_inches='tight', pad_inches=0)
 
 #
 # reliability
@@ -285,4 +314,30 @@ ax = reliab.plot(x='n', logy=True,
 
 
 save_figure("antennas-reability-1-week-k-3.pdf")
+
+
+# eigenvalues
+Rperiod=1
+def R3eigen(mttf, mttr, n, t):
+    f=1/mttf
+    r=1/mttr
+    Q = np.array([[-n*f, n*f, 0],
+              [r, -(n-1)*f-r, (n-1)*f],
+              [0, r, -(n-2)*f-r]])
+    return np.linalg.eig(Q)[0]
+
+
+
+R3eigendf = pd.DataFrame([abs(R3eigen(1, 1/365, n, Rperiod)) for n in ndev], columns=['l1', 'l2', 'l3'])
+R3eigendf['n'] = ndev
+
+ax = R3eigendf.plot(x='n', logy=True)
+
+#
+# testing
+#
+
+dft = reliab.copy()
+dft.columns = ['n', 'k1', 'k2mttr1w', 'k2mttr1d', 'k2mttr2h']
+dft.to_csv('antennas-reability-1-year.csv', sep=' ', index=False)
 
