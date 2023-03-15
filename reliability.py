@@ -32,36 +32,49 @@ def save_figure(file, font=14):
     plt.savefig(fname, format='pdf',
                 bbox_inches='tight', pad_inches=0)
 
-#
-# failure probability
-#
+def pisk(alpha, s, k):
+    return (alpha**s/np.math.factorial(k-s))/sum([alpha**j/np.math.factorial(k-j) for j in range(int(k+1))])
+
 def pik(alpha, k):
     return alpha**k/sum([alpha**j/np.math.factorial(k-j) for j in range(int(k+1))])
 
-min=1e-4
-max=1e-1
-def func(x, k):
-    return pik(x,k)-1e-3
+#
+# failure probability vs k
+#
+alpha = [1e-3, 1e-2, 1e-1]
 
-ro =[scipy.optimize.brentq(func, min, max, args=(1)),
-     scipy.optimize.brentq(func, min, max, args=(2)),
-     scipy.optimize.brentq(func, min, max, args=(3))]
+a_df = pd.DataFrame()
+for a in alpha:
+    for k in range(1,10+1):
+        res = []
+        for s in range(k+1):
+            res.append(pisk(a, s, k))
+        df = pd.DataFrame({'prob': res, 's': range(k+1)})
+        df['alpha'] = a
+        df['k'] = k
+        a_df = pd.concat([a_df, df], axis=0)   
+a_df.index=range(a_df.shape[0])
+a_df.shape
 
-alim = 1e4
-xlog = np.logspace(-5, 0, 100)
+def plot_prob(k, **kwargs):
+    df = a_df.loc[k.index]
+    g = sns.lineplot(df, x='s', y='prob', hue='alpha')
+    g.set(yscale='log')
+    g.set_xlabel('failure probability')
+    g.set_ylabel('$i$')
 
-reliab =  pd.DataFrame({'x': xlog, 
-                        r'$k=1$': [pik(a, 1) for a in xlog],
-                        r'$k=2$': [pik(a, 2) for a in xlog],
-                        r'$k=3$': [pik(a, 3) for a in xlog]})
+g = sns.FacetGrid(a_df, col="k", sharex=False)
+g.map(plot_prob, 'k')
 
-ax = reliab.plot(x='x', logx=True, logy=True, ylabel='failure probability', xlabel=r'$\alpha$', ylim=(1e-9,1))
-ax.hlines(y=1e-3, xmin=xlog[0], xmax=xlog[-1], ls='--', lw=1)
-for i in range(3):
-    ax.vlines(x=ro[i], ymin=1e-3, ymax=4e-4, ls='--', lw=1)
-    ax.annotate(r'$\alpha_{}$'.format(i+1), xy=(ro[i],2e-4), ha="center")
 
-save_figure("gateway-failure-probability.pdf")
+plt.rcParams.update({'font.size': 14})
+g = sns.lineplot(adfm, x='prob', y='value', hue='k')
+g.set(xscale='log')
+g.set_xlabel('failure probability')
+g.set_ylabel('$\\alpha=mttr_r/mttf_r$')
+
+
+
 
 #
 # alpha vs k
@@ -89,8 +102,37 @@ g = sns.lineplot(adfm, x='prob', y='value', hue='k')
 g.set(xscale='log')
 g.set_xlabel('failure probability')
 g.set_ylabel('$\\alpha=mttr_r/mttf_r$')
+
 plt.savefig('figures/alpha-vs-failure-prob.pdf', format='pdf',
             bbox_inches='tight', pad_inches=0)
+
+#
+# failure probability
+#
+min=1e-4
+max=1e-1
+def func(x, k):
+    return pik(x,k)-1e-3
+
+ro =[scipy.optimize.brentq(func, min, max, args=(1)),
+     scipy.optimize.brentq(func, min, max, args=(2)),
+     scipy.optimize.brentq(func, min, max, args=(3))]
+
+alim = 1e4
+xlog = np.logspace(-5, 0, 100)
+
+reliab =  pd.DataFrame({'x': xlog, 
+                        r'$k=1$': [pik(a, 1) for a in xlog],
+                        r'$k=2$': [pik(a, 2) for a in xlog],
+                        r'$k=3$': [pik(a, 3) for a in xlog]})
+
+ax = reliab.plot(x='x', logx=True, logy=True, ylabel='failure probability', xlabel=r'$\alpha$', ylim=(1e-9,1))
+ax.hlines(y=1e-3, xmin=xlog[0], xmax=xlog[-1], ls='--', lw=1)
+for i in range(3):
+    ax.vlines(x=ro[i], ymin=1e-3, ymax=4e-4, ls='--', lw=1)
+    ax.annotate(r'$\alpha_{}$'.format(i+1), xy=(ro[i],2e-4), ha="center")
+
+save_figure("gateway-failure-probability.pdf")
 
 #
 # reliability
