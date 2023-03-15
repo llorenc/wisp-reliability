@@ -41,7 +41,8 @@ def pik(alpha, k):
 #
 # failure probability vs k
 #
-alpha = [1e-3, 1e-2, 1e-1]
+#alpha = [1e-3, 1e-2, 1e-1]
+alpha = [2.5/100, 5/100, 10/100]
 
 a_df = pd.DataFrame()
 for a in alpha:
@@ -58,22 +59,20 @@ a_df.shape
 
 def plot_prob(k, **kwargs):
     df = a_df.loc[k.index]
-    g = sns.lineplot(df, x='s', y='prob', hue='alpha')
+    g = sns.lineplot(df, x='s', y='prob', hue='alpha', marker="o")
+    g.set_xticks(range(k.iloc[0]+1))
     g.set(yscale='log')
-    g.set_xlabel('failure probability')
-    g.set_ylabel('$i$')
+    g.set_ylabel('probability')
 
-g = sns.FacetGrid(a_df, col="k", sharex=False)
+plt.rcParams.update({'font.size': 12})
+g = sns.FacetGrid(a_df, col="k", sharey=False, sharex=False, col_wrap=5)
 g.map(plot_prob, 'k')
+g.set_axis_labels('$i$')
+g.add_legend()
+g.legend.set_title('$\\alpha$')
 
-
-plt.rcParams.update({'font.size': 14})
-g = sns.lineplot(adfm, x='prob', y='value', hue='k')
-g.set(xscale='log')
-g.set_xlabel('failure probability')
-g.set_ylabel('$\\alpha=mttr_r/mttf_r$')
-
-
+plt.savefig('figures/prob-vs-state-facetgrid.pdf', format='pdf',
+            bbox_inches='tight', pad_inches=0)
 
 
 #
